@@ -99,7 +99,7 @@ const InvestmentCalculator = () => {
           )}
           <p className="text-sm text-gray-300 mb-1">Month {data.month}</p>
           <p className="text-lg font-semibold bg-gradient-to-r from-[#876DF8] to-[#C93DA7] bg-clip-text text-transparent">
-            {formatCurrency(data.value)}
+            {formatCurrency(doubleValue)}
           </p>
           <p className="text-xs">Growth: {((data.value / initialInvestment - 1) * 100).toFixed(2)}%</p>
         </div>
