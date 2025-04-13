@@ -157,7 +157,7 @@ const InvestmentCalculator = () => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-1 animate-fadeIn">
+    <div className="w-full max-w-3xl mx-auto px-4 py-1 animate-fadeIn">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
         {/* Initial Investment Slider */}
         <div>
