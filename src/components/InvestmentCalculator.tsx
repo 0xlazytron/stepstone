@@ -158,7 +158,7 @@ const InvestmentCalculator = () => {
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-1 animate-fadeIn">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-3">
         {/* Initial Investment Slider */}
         <div>
           <div className="flex justify-between mb-2">
@@ -211,7 +211,7 @@ const InvestmentCalculator = () => {
       </div>
 
       {/* Investment Growth Chart */}
-      <div className="bg-navy-dark rounded-lg p-6 mb-10 relative">
+      <div className="bg-navy-dark rounded-lg p-6 mb-3 relative">
         <h3 className="text-white text-lg font-medium mb-4">Investment Growth Over Time</h3>
         <DoubleIndicator />
         <div className="h-80">
