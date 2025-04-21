@@ -49,20 +49,38 @@ const InvestmentCalculator = () => {
 
     // Generate chart data up to the doubling point
     const data: InvestmentData[] = [];
+    const doubleAmount = initialInvestment * 2;
+    
+    // Calculate growth rate that ensures we reach exactly double at the doubling point
+    const growthRatePerMonth = Math.pow(2, 1/monthsToDouble) - 1;
+    
+    // Calculate the halfway point (in months)
+    const halfwayMonth = Math.floor(monthsToDouble / 2);
+    
     let currentValue = initialInvestment;
-    const monthlyReturn = initialInvestment * (monthlyRoi / 100);
-
+    
     for (let month = 1; month <= monthsToDouble; month++) {
-      // Add the monthly ROI amount consistently
-      currentValue += monthlyReturn;
+      // Use compound growth to ensure we hit exactly 200% at the doubling point
+      currentValue = initialInvestment * Math.pow(1 + growthRatePerMonth, month);
+      
+      // Ensure the halfway point (in months) shows initial investment * 1.5
+      if (month === halfwayMonth) {
+        currentValue = initialInvestment * 1.5; // Set to exactly 50% growth (150% of initial)
+      }
+      
+      // Ensure we never exceed the double amount
+      if (currentValue > doubleAmount) {
+        currentValue = doubleAmount;
+      }
+      
       data.push({
         month: month,
         value: Number(currentValue.toFixed(2)),
       });
     }
 
-    // Ensure doubling amount is exactly double the initial investment
-    const doubleAmount = initialInvestment * 2;
+    // Ensure the final value is exactly double the initial investment
+    data[monthsToDouble - 1].value = doubleAmount;
 
     // Update state variables
     setChartData(data);
@@ -90,6 +108,12 @@ const InvestmentCalculator = () => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const isDoublePoint = data.month === doubleMonth;
+      
+      // Fixed calculation to show correct percentage (max 200% at doubling point)
+      // Convert to growth percentage (100% means initial investment, 200% means doubled)
+      const calculatedGrowth = (data.value / initialInvestment) * 100;
+      const percentGrowth = Math.min(calculatedGrowth, 200).toFixed(0);
+      
       return (
         <div className={`chart-tooltip ${isDoublePoint ? 'double-point-tooltip' : ''}`}>
           {isDoublePoint && (
@@ -99,9 +123,9 @@ const InvestmentCalculator = () => {
           )}
           <p className="text-sm text-gray-300 mb-1">Month {data.month}</p>
           <p className="text-lg font-semibold bg-gradient-to-r from-[#876DF8] to-[#C93DA7] bg-clip-text text-transparent">
-            {formatCurrency(doubleValue)}
+            {formatCurrency(data.value)}
           </p>
-          <p className="text-xs">Growth: {((data.value / initialInvestment - 1) * 100).toFixed(2)}%</p>
+          <p className="text-xs">Growth: {percentGrowth}%</p>
         </div>
       );
     }
@@ -321,6 +345,7 @@ const InvestmentCalculator = () => {
           title="Growth Multiplier"
           value="2.0x"
           textColor="bg-gradient-to-r from-[#8271FF] to-[#CF39A0] bg-clip-text text-transparent"
+          highlight={true}
         />
         <StatsCard
           title="Time to Double"
