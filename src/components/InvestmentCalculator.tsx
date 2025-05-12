@@ -24,51 +24,25 @@ const InvestmentCalculator = () => {
     // Calculate annual ROI
     const annualROI = monthlyRoi * 12;
 
-    // Calculate months to double based on specific examples
-    let monthsToDouble = 0;
-
-    // Hardcoded values based on provided examples
-    if (Math.abs(monthlyRoi - 2) < 0.1) {
-      monthsToDouble = 100;
-    } else if (Math.abs(monthlyRoi - 5) < 0.1) {
-      monthsToDouble = 40;
-    } else {
-      // For values not in examples, use a formula that approximates the examples
-      // This is a simple linear interpolation between the two example points
-      if (monthlyRoi < 2) {
-        // For values less than 2%, extrapolate using the 2% point as reference
-        monthsToDouble = Math.round(100 + (2 - monthlyRoi) * (100 / 2));
-      } else if (monthlyRoi > 5) {
-        // For values greater than 5%, extrapolate using the 5% point as reference
-        monthsToDouble = Math.round(40 - (monthlyRoi - 5) * (60 / 3));
-      } else {
-        // For values between 2% and 5%, interpolate between 100 and 40 months
-        monthsToDouble = Math.round(100 - ((monthlyRoi - 2) / 3) * 60);
-      }
-    }
+    // Calculate months to reach 200% (double the investment)
+    // For 1% monthly ROI, it takes 200 months to reach 200%
+    // So we can calculate the months needed based on the monthly ROI percentage
+    const monthsToDouble = Math.round(200 / monthlyRoi);
 
     // Generate chart data up to the doubling point
     const data: InvestmentData[] = [];
     const doubleAmount = initialInvestment * 2;
-    
-    // Calculate growth rate that ensures we reach exactly double at the doubling point
-    const growthRatePerMonth = Math.pow(2, 1/monthsToDouble) - 1;
-    
-    // Calculate the halfway point (in months)
-    const halfwayMonth = Math.floor(monthsToDouble / 2);
+    const monthlyReturn = initialInvestment * (monthlyRoi / 100);
     
     let currentValue = initialInvestment;
+    let accumulatedROI = 0;
     
     for (let month = 1; month <= monthsToDouble; month++) {
-      // Use compound growth to ensure we hit exactly 200% at the doubling point
-      currentValue = initialInvestment * Math.pow(1 + growthRatePerMonth, month);
+      // Add the monthly ROI
+      accumulatedROI += monthlyReturn;
+      currentValue = initialInvestment + accumulatedROI;
       
-      // Ensure the halfway point (in months) shows initial investment * 1.5
-      if (month === halfwayMonth) {
-        currentValue = initialInvestment * 1.5; // Set to exactly 50% growth (150% of initial)
-      }
-      
-      // Ensure we never exceed the double amount
+      // Ensure we don't exceed double the investment
       if (currentValue > doubleAmount) {
         currentValue = doubleAmount;
       }
@@ -77,10 +51,12 @@ const InvestmentCalculator = () => {
         month: month,
         value: Number(currentValue.toFixed(2)),
       });
-    }
 
-    // Ensure the final value is exactly double the initial investment
-    data[monthsToDouble - 1].value = doubleAmount;
+      // Stop if we've reached double the investment
+      if (currentValue >= doubleAmount) {
+        break;
+      }
+    }
 
     // Update state variables
     setChartData(data);
@@ -109,10 +85,11 @@ const InvestmentCalculator = () => {
       const data = payload[0].payload;
       const isDoublePoint = data.month === doubleMonth;
       
-      // Fixed calculation to show correct percentage (max 200% at doubling point)
-      // Convert to growth percentage (100% means initial investment, 200% means doubled)
-      const calculatedGrowth = (data.value / initialInvestment) * 100;
-      const percentGrowth = Math.min(calculatedGrowth, 200).toFixed(0);
+      // Calculate growth percentage starting from 0%
+      // 100% means got back initial investment (risk-free point)
+      // 200% means doubled the investment
+      const growthAmount = data.value - initialInvestment;
+      const percentGrowth = Math.min((growthAmount / initialInvestment) * 100, 200).toFixed(0);
       
       return (
         <div className={`chart-tooltip ${isDoublePoint ? 'double-point-tooltip' : ''}`}>
@@ -121,11 +98,17 @@ const InvestmentCalculator = () => {
               <span className="font-xs text-[#FF8C00]">Investment Doubled!</span>
             </div>
           )}
+          {Number(percentGrowth) >= 100 && !isDoublePoint && (
+            <div className="flex items-center justify-center mb-2 text-green-400">
+              <span className="font-xs">Risk-Free Point Reached!</span>
+            </div>
+          )}
           <p className="text-sm text-gray-300 mb-1">Month {data.month}</p>
           <p className="text-lg font-semibold bg-gradient-to-r from-[#876DF8] to-[#C93DA7] bg-clip-text text-transparent">
             {formatCurrency(data.value)}
           </p>
-          <p className="text-xs">Growth: {percentGrowth}%</p>
+          <p className="text-xs">ROI Growth: {percentGrowth}%</p>
+          <p className="text-xs">Monthly Return: {formatCurrency(monthlyRoi * initialInvestment / 100)}</p>
         </div>
       );
     }
@@ -324,7 +307,11 @@ const InvestmentCalculator = () => {
         )}
         {!highlightActive && (
           <div className="bg-gradient-to-r from-[#F97316] to-[#0EA5E9] text-white rounded-md py-3 px-4 text-center text-sm mt-6 max-w-md mx-auto">
-            Investment increases {monthlyRoi}% per month ({formatCurrency(initialInvestment * monthlyRoi / 100)} in monthly ROI)
+            Monthly ROI: {monthlyRoi}% ({formatCurrency(initialInvestment * monthlyRoi / 100)})
+            <br />
+            Months to Risk-Free (100%): {Math.round(100 / monthlyRoi)}
+            <br />
+            Months to Double (200%): {Math.round(200 / monthlyRoi)}
           </div>
         )}
       </div>
@@ -337,19 +324,19 @@ const InvestmentCalculator = () => {
           textColor="text-white"
         />
         <StatsCard
-          title="Annual ROI"
-          value={`${annualRoi.toFixed(1)}%`}
+          title="Monthly ROI"
+          value={`${monthlyRoi}%`}
           textColor="text-purple-light"
         />
         <StatsCard
-          title="Growth Multiplier"
-          value="2.0x"
+          title="Risk-Free Point"
+          value={`${Math.round(100 / monthlyRoi)} months`}
           textColor="bg-gradient-to-r from-[#8271FF] to-[#CF39A0] bg-clip-text text-transparent"
           highlight={true}
         />
         <StatsCard
           title="Time to Double"
-          value={`${doubleMonth} months`}
+          value={`${Math.round(200 / monthlyRoi)} months`}
           textColor="bg-gradient-to-r from-[#876DF8] to-[#C93DA7] bg-clip-text text-transparent"
           highlight={true}
         />
